@@ -1,10 +1,5 @@
-/**
- * CONFIG: pon aquí tu endpoint real de Magic Loops.
- * Suele ser algo como:
- * https://magicloops.dev/api/run/<LOOP_ID>
- * o el endpoint que te dé Magic Loops al publicar el loop.
- */
-const API_URL = "PASTE_YOUR_MAGIC_LOOPS_ENDPOINT_HERE";
+
+const API_URL = "https://magicloops.dev/api/loop/58c97166-933e-4e60-a23a-3d1056aea8c9/run";
 
 // Si tu endpoint requiere auth, mete aquí el token y lo enviamos como Bearer.
 // Si NO hace falta, déjalo vacío.
