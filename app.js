@@ -3,6 +3,36 @@
  ***********************/
 const API_URL = "https://magicloops.dev/api/loop/fe9a0b9d-8b5c-43d0-8554-3ed8a32f095a/run";
 
+const HTML_GENERATOR_PROMPT = String.raw`Eres un generador de material imprimible para logopedia.
+Tu tarea es recibir un JSON con parámetros y devolver SIEMPRE HTML A4 listo para imprimir con tarjetas (3x4) que contengan los elementos solicitados.
+La salida debe ser solo HTML completo, con <html>, <head>, <style> y <body>.
+
+Requisitos de salida:
+- Debe ser HTML válido para imprimir en A4 sin cortar contenido.
+- Incluye CSS dentro de <style> para cuadrícula 3 columnas x 4 filas.
+- Cada tarjeta debe tener un borde visible y un tamaño uniforme.
+- No mezcles texto plano sin formato; todo dentro de HTML.
+- Nada de JSON ni texto adicional fuera de la etiqueta html.
+
+Parámetros esperados (JSON input):
+{
+  "age_years": number,
+  "dx": string,
+  "goal": string,
+  "theme": string,
+  "material_type": string, // "tarjetas"
+  "items_count": number
+}
+
+Lógica:
+1. Usa el campo "theme" y "goal" para crear un título.
+2. Genera exactamente items_count tarjetas.
+3. Si no hay suficientes datos de items, usa listas de ejemplo relacionadas con goal/theme.
+4. No devuelvas nada que no sea HTML válido.
+
+Salida:
+Devuelve exclusivamente HTML completo.`;
+
 /***********************
  * HELPERS
  ***********************/
@@ -13,6 +43,7 @@ const statusEl = $("status");
 const previewEl = $("preview");
 const btnPrint = $("btnPrint");
 const btn = $("btn");
+const jsonEl = $("json");
 
 function setStatus(msg, isError = false) {
   statusEl.textContent = msg || "";
@@ -29,34 +60,38 @@ function escapeHtml(str) {
 }
 
 function normalizeLines(rawText) {
-  // Quita comillas si el API devuelve un string con comillas
   const t = String(rawText || "").trim().replace(/^"+|"+$/g, "").trim();
-  // Normaliza saltos
-  const lines = t
+  return t
     .split(/\r?\n/)
-    .map(l => l.trim())
+    .map((l) => l.trim())
     .filter(Boolean);
-
-  return lines;
 }
 
 function linesToCards(lines) {
-  // Si la primera línea parece título, la usamos como title
   let title = "Material imprimible";
   let items = lines;
 
   if (lines.length && lines[0].length <= 90) {
-    // heurística simple: si hay ":" o parece frase larga, título
     if (lines[0].includes(":") || lines[0].toLowerCase().includes("actividades")) {
       title = lines[0];
       items = lines.slice(1);
     }
   }
 
-  // Si no hay items, no hacemos nada
   if (!items.length) return { title, items: [] };
 
   return { title, items };
+}
+
+function normalizeHtmlResponse(raw) {
+  const text = String(raw || "").trim();
+
+  const fenced = text.match(/^```(?:html)?\s*([\s\S]*?)\s*```$/i);
+  const candidate = fenced ? fenced[1].trim() : text;
+
+  if (candidate.toLowerCase().includes("<html")) return candidate;
+
+  return "";
 }
 
 /***********************
@@ -66,7 +101,6 @@ function buildA4CardsHtml(title, items, columns = 3, rows = 4) {
   const totalSlots = columns * rows;
   const filled = items.slice(0, totalSlots);
 
-  // Relleno si faltan
   while (filled.length < totalSlots) filled.push("");
 
   const cardsHtml = filled.map((text) => {
@@ -110,6 +144,8 @@ function buildA4CardsHtml(title, items, columns = 3, rows = 4) {
       align-items: stretch;
       justify-content: stretch;
       page-break-inside: avoid;
+      outline: 0.2mm dashed rgba(0,0,0,.25);
+      outline-offset: -2mm;
     }
     .card-inner {
       padding: 6mm;
@@ -125,9 +161,6 @@ function buildA4CardsHtml(title, items, columns = 3, rows = 4) {
       line-height: 1.1;
       word-break: break-word;
     }
-    /* guías de corte suaves */
-    .card { outline: 0.2mm dashed rgba(0,0,0,.25); outline-offset: -2mm; }
-
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
@@ -168,10 +201,10 @@ async function callApi(body) {
  * BUILD REQUEST BODY
  ***********************/
 function buildRequestBody() {
-  // Nota: como tu loop es simple, mandamos SOLO lo que espera.
-  // Si tu HTML tiene otros campos, se ignoran sin problema.
+  const extraPrompt = $("prompt").value?.trim();
+
   return {
-    prompt: $("prompt").value || "Dibujar animales que empiecen con /p/",
+    prompt: extraPrompt ? `${HTML_GENERATOR_PROMPT}\n\nNotas extra del usuario:\n${extraPrompt}` : HTML_GENERATOR_PROMPT,
     parameters: {
       age_years: Number($("age").value || 4),
       dx: $("dx").value || "TEL",
@@ -211,16 +244,21 @@ form.addEventListener("submit", async (e) => {
   try {
     const body = buildRequestBody();
     const raw = await callApi(body);
+    jsonEl.textContent = raw;
+
+    const htmlFromApi = normalizeHtmlResponse(raw);
+    if (htmlFromApi) {
+      renderInIframe(htmlFromApi);
+      setStatus("Listo (HTML A4 generado por la API).");
+      return;
+    }
 
     const lines = normalizeLines(raw);
     const { title, items } = linesToCards(lines);
+    if (!items.length) throw new Error("La API no devolvió contenido imprimible.");
 
-    if (!items.length) throw new Error("La API no devolvió ítems.");
-
-    const html = buildA4CardsHtml(title, items, 3, 4);
-    renderInIframe(html);
-
-    setStatus("Listo (convertido a A4).");
+    renderInIframe(buildA4CardsHtml(title, items, 3, 4));
+    setStatus("Listo (convertido a A4 desde texto).");
   } catch (err) {
     setStatus(err.message || "Error desconocido", true);
   } finally {
