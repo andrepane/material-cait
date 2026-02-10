@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prueba API Magic Loops - Logopedia</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>Prueba API (Magic Loops)</h1>
+    <p class="sub">Genera pautas, actividades y material imprimible (A4) desde un único endpoint.</p>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Petición</h2>
+
+      <form id="form" class="form">
+        <label class="field">
+          <span>Type</span>
+          <select id="type" required>
+            <option value="pautas_familia">pautas_familia</option>
+            <option value="sesion_entorno">sesion_entorno</option>
+            <option value="actividades">actividades</option>
+            <option value="material_tarjetas">material_tarjetas</option>
+            <option value="material_tablero">material_tablero</option>
+            <option value="material_hoja">material_hoja</option>
+            <option value="texto_alborada">texto_alborada</option>
+          </select>
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span>Edad (años)</span>
+            <input id="age" type="number" min="0" step="0.5" value="4" />
+          </label>
+
+          <label class="field">
+            <span>Contexto</span>
+            <select id="context">
+              <option value="casa">casa</option>
+              <option value="cole">cole</option>
+              <option value="cait" selected>cait</option>
+              <option value="comunidad">comunidad</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>ODAT / Dx</span>
+          <input id="dx" type="text" placeholder="Ej: TEL, TEA, disfemia..." value="TEL" />
+        </label>
+
+        <label class="field">
+          <span>Nivel</span>
+          <select id="level">
+            <option value="preverbal">preverbal</option>
+            <option value="palabras">palabras</option>
+            <option value="frases_2" selected>frases_2</option>
+            <option value="frases_largas">frases_largas</option>
+            <option value="lectoescritura">lectoescritura</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Objetivo principal</span>
+          <input id="goal" type="text" placeholder="Ej: Aumentar intención comunicativa en juego" value="Aumentar intención comunicativa en juego" />
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span>Tiempo (min)</span>
+            <input id="time" type="number" min="5" step="5" value="45" />
+          </label>
+
+          <label class="field">
+            <span>Formato salida</span>
+            <select id="format">
+              <option value="json" selected>json</option>
+              <option value="markdown">markdown</option>
+              <option value="html">html</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Intereses (coma)</span>
+          <input id="interests" type="text" placeholder="Ej: coches, dinosaurios, pelota" value="coches, pelota" />
+        </label>
+
+        <label class="field">
+          <span>Dificultades (coma)</span>
+          <input id="difficulties" type="text" placeholder="Ej: turnos, frases, atención" value="turnos, frases cortas" />
+        </label>
+
+        <label class="field">
+          <span>Fortalezas (coma)</span>
+          <input id="strengths" type="text" placeholder="Ej: buena imitación, motivación alta" value="buena imitación" />
+        </label>
+
+        <label class="field">
+          <span>Evitar estrategias (coma)</span>
+          <input id="avoid" type="text" placeholder='Ej: modelado, expansión' />
+        </label>
+
+        <label class="field">
+          <span>Prompt libre (opcional)</span>
+          <textarea id="prompt" rows="3" placeholder="Instrucciones extra para el loop (opcional)"></textarea>
+        </label>
+
+        <div class="actions">
+          <button id="btn" type="submit">Generar</button>
+          <button id="btnPrint" type="button" class="secondary" disabled>Imprimir A4</button>
+        </div>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Respuesta (JSON)</h2>
+      <pre id="json" class="pre">{}</pre>
+    </section>
+
+    <section class="card wide">
+      <h2>Vista imprimible (A4)</h2>
+      <p class="hint">Si la API devuelve <code>printable.html_a4</code>, se mostrará aquí.</p>
+      <iframe id="preview" class="preview" title="Vista imprimible"></iframe>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>Tip: si te devuelve HTML A4, usa “Imprimir A4” para sacar PDF.</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
